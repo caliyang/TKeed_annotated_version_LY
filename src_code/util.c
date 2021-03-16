@@ -14,22 +14,26 @@
 #include "http_request.h"
 #include "epoll.h"
 
-int read_conf(char* filename, tk_conf_t* conf){
+int read_conf(char* filename, tk_conf_t* conf){ //#include "util.h"
     // 以只读方式打开文件
-    FILE* fp = fopen(filename, "r");
+    FILE* fp = fopen(filename, "r"); //#include <stdio.h>
     if(!fp)
+        //如果为空，fp为NULL，函数返回-1
         return TK_CONF_ERROR;
 
     char buff[BUFLEN];
+    /*buff_len - buffer length*/
     int buff_len = BUFLEN;
+    /*curr_pos - current position*/
     char* curr_pos = buff;
+    /*delim_pos - delimit postion*/
     char* delim_pos = NULL;
     int i = 0;
     int pos = 0;
     int line_len = 0;
-    while(fgets(curr_pos, buff_len - pos, fp)){
+    while(fgets(curr_pos, buff_len - pos, fp)){ //#include <stdio.h>
         // 定位每行第一个界定符位置
-        delim_pos = strstr(curr_pos, DELIM);
+        delim_pos = strstr(curr_pos, DELIM); #include <string.h>
         if(!delim_pos)
             return TK_CONF_ERROR;
         if(curr_pos[strlen(curr_pos) - 1] == '\n'){
