@@ -30,28 +30,39 @@ int read_conf(char* filename, tk_conf_t* conf){ //#include "util.h"
     char* delim_pos = NULL;
     int i = 0;
     int pos = 0;
-    int line_len = 0;
+    int line_len = 0;5                                              
+    
+    /*curr_pos不累计会覆盖，fp指向FILE 结构，因此会记住当前的文件输出位置，也就是会累计;
+        while循环的实际作用，获得文件中的root信息、port值、thread数量和当前行行长，
+        不是每行中的这个信息，可以见“tkeed.conf”文件；
+        由于没有拿“tkeed.conf”文件看这段代码，无意义了好长时间猜测，下不为例！！！*/                                                                                                                                                                           
     while(fgets(curr_pos, buff_len - pos, fp)){ //#include <stdio.h>
         // 定位每行第一个界定符位置
-        delim_pos = strstr(curr_pos, DELIM); #include <string.h>
+        delim_pos = strstr(curr_pos, DELIM); //#include <string.h>
         if(!delim_pos)
             return TK_CONF_ERROR;
-        if(curr_pos[strlen(curr_pos) - 1] == '\n'){
-            curr_pos[strlen(curr_pos) - 1] = '\0';
+        /*如果行末是换行符，则把行末的换行符替换为NULL字符*/
+        if(curr_pos[strlen(curr_pos) - 1] == '\n'){ //#include <string.h>
+            curr_pos[strlen(curr_pos) - 1] = '\0'; 
         }
 
+        /*还在while循环内*/
         // 得到root信息
-        if(strncmp("root", curr_pos, 4) == 0){
+        if(strncmp("root", curr_pos, 4) == 0){ //#include <string.h>
+            /*delim_pos移动到“=”后面的第一个字符*/
             delim_pos = delim_pos + 1;
             while(*delim_pos != '#'){
+                /*是赋值操作，不是“==”比较操作；conf->root指向一个被“=”和“#”包围的字符串*/
                 conf->root[i++] = *delim_pos;
                 ++delim_pos;
             }
         }
 
+        /*还在while循环内*/
         // 得到port值
-        if(strncmp("port", curr_pos, 4) == 0)
-            conf->port = atoi(delim_pos + 1);
+        /*port值在上面“#”之后*/
+        if(strncmp("port", curr_pos, 4) == 0) 
+            conf->port = atoi(delim_pos + 1); //#include <stdlib.h>
 
         // 得到thread数量
         if(strncmp("thread_num", curr_pos, 9) == 0)
@@ -61,7 +72,8 @@ int read_conf(char* filename, tk_conf_t* conf){ //#include "util.h"
         line_len = strlen(curr_pos);
 
         // 当前位置跳转至下一行首部
-        curr_pos += line_len;
+        /*跳转至该行的'\0'所在位置*/
+        curr_pos += line_len; 
     }
     fclose(fp);
     return TK_CONF_OK;
