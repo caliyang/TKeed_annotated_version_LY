@@ -41,7 +41,7 @@ int read_conf(char* filename, tk_conf_t* conf){ //#include "util.h"
         delim_pos = strstr(curr_pos, DELIM); //#include <string.h>
         if(!delim_pos)
             return TK_CONF_ERROR;
-        /*如果行末是换行符，则把行末的换行符替换为NULL字符*/
+        /*如果行末是换行符，则把行末的换行符替换为NULL字符，01？？？*/
         if(curr_pos[strlen(curr_pos) - 1] == '\n'){ //#include <string.h>
             curr_pos[strlen(curr_pos) - 1] = '\0'; 
         }
@@ -79,9 +79,10 @@ int read_conf(char* filename, tk_conf_t* conf){ //#include "util.h"
     return TK_CONF_OK;
 }
 
-void handle_for_sigpipe(){
+/*SIGPIPE写至无读进程的管道，默认行为是终止，现将其都动作改为忽略*/
+void handle_for_sigpipe(){ //#include <signal.h>
     struct sigaction sa;
-    memset(&sa, '\0', sizeof(sa));
+    memset(&sa, '\0', sizeof(sa)); //#include <string.h>
     sa.sa_handler = SIG_IGN;
     sa.sa_flags = 0;
     if(sigaction(SIGPIPE, &sa, NULL))
@@ -90,6 +91,7 @@ void handle_for_sigpipe(){
 
 int socket_bind_listen(int port){
     // 检查port值，取正确区间范围
+    /*此处的端口号应该用临时端口号，01？？？，0-1023,1024-49151,49152-65535*/
     port = ((port <= 1024) || (port >= 65535)) ? 6666 : port;
 
     // 创建socket(IPv4 + TCP)，返回监听描述符
@@ -98,17 +100,21 @@ int socket_bind_listen(int port){
         return -1;
 
     // 消除bind时"Address already in use"错误
+    /*optval - option value*/
     int optval = 1;
+    /*设置通用套接字选项SO_REUSEADDR*，目的是在服务器程序重新启动时，
+        避免等待此前TIME_WAIT状态的结束，以立即复用众所周知的端口*/
     if(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (const void*)&optval, sizeof(int)) == -1){
         return -1;
     }
 
-    // 设置服务器IP和Port，和监听描述副绑定
+    // 设置服务器IP和Port，和监听描述符绑定
     struct sockaddr_in server_addr;
     bzero((char*)&server_addr, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_addr.sin_port = htons((unsigned short)port);
+    /*int：-2147483648~2147483647 转换为 unsigned short：0-65535*/
+    server_addr.sin_port = htons((unsigned short)port); 
     if(bind(listen_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
         return -1;
 
