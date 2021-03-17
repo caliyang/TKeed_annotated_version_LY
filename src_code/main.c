@@ -18,9 +18,11 @@ tk_conf_t conf;
 
 int main(int argc, char *argv[]){
     // 读取配置文件
+    /*用配置文件填充conf结构体*/
     read_conf(conf_file, &conf);
 
     // 处理SIGPIPE
+    /*SIGPIPE写至无读进程的管道，默认行为是终止，现将其都动作改为忽略*/
     handle_for_sigpipe();
 
     // 初始化套接字开始监听
