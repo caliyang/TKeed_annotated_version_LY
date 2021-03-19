@@ -26,9 +26,11 @@ int main(int argc, char *argv[]){
     handle_for_sigpipe();
 
     // 初始化套接字开始监听
+    /*该函数创建套接字、设置套接字选项、绑定地址，并使绑定地址的套接字处于监听状态*/
     int listen_fd = socket_bind_listen(conf.port);
 
     // 设置为socket非阻塞
+    /*该函数将套接字设置为非阻塞式I/O型，UNPv1第183面有详细解释*/
     int rc = make_socket_non_blocking(listen_fd);
 
     // 创建epoll并注册监听描述符

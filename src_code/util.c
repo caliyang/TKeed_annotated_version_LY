@@ -4,7 +4,7 @@
 
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
+#include <arpa/inet.h> //可以省略
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
@@ -63,15 +63,15 @@ int read_conf(char* filename, tk_conf_t* conf){ //#include "util.h"
         /*还在while循环内*/
         // 得到port值
         /*port值在上面“#”之后*/
-        if(strncmp("port", curr_pos, 4) == 0) 
+        if(strncmp("port", curr_pos, 4) == 0) //#include <string.h>
             conf->port = atoi(delim_pos + 1); //#include <stdlib.h>
 
         // 得到thread数量
-        if(strncmp("thread_num", curr_pos, 9) == 0)
-            conf->thread_num = atoi(delim_pos + 1);
+        if(strncmp("thread_num", curr_pos, 9) == 0) //#include <string.h>
+            conf->thread_num = atoi(delim_pos + 1); //#include <stdlib.h>
 
         // line_len得到当前行行长
-        line_len = strlen(curr_pos);
+        line_len = strlen(curr_pos); //#include <string.h>
 
         // 当前位置跳转至下一行首部
         /*跳转至该行的'\0'所在位置*/
@@ -81,16 +81,18 @@ int read_conf(char* filename, tk_conf_t* conf){ //#include "util.h"
     return TK_CONF_OK;
 }
 
-/*SIGPIPE写至无读进程的管道，默认行为是终止，现将其都动作改为忽略*/
-void handle_for_sigpipe(){ //#include <signal.h>
+/*SIGPIPE写至无读进程的管道，默认行为是终止，该函数现将其都动作改为忽略*/
+void handle_for_sigpipe(){
     struct sigaction sa;
     memset(&sa, '\0', sizeof(sa)); //#include <string.h>
     sa.sa_handler = SIG_IGN;
     sa.sa_flags = 0;
-    if(sigaction(SIGPIPE, &sa, NULL))
+    /*sigaction函数的调用不判断成功与否吗，01？？？*/
+    if(sigaction(SIGPIPE, &sa, NULL)) //#include <signal.h>
         return;
 }
 
+/*该函数创建套接字、设置套接字选项、绑定地址，并使绑定地址的套接字处于监听状态*/
 int socket_bind_listen(int port){
     // 检查port值，取正确区间范围
     /*此处的端口号应该用临时端口号，01？？？，0-1023,1024-49151,49152-65535*/
@@ -98,7 +100,7 @@ int socket_bind_listen(int port){
 
     // 创建socket(IPv4 + TCP)，返回监听描述符
     int listen_fd = 0;
-    if((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    if((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)  //#include <sys/socket.h>
         return -1;
 
     // 消除bind时"Address already in use"错误
@@ -106,56 +108,62 @@ int socket_bind_listen(int port){
     int optval = 1;
     /*设置通用套接字选项SO_REUSEADDR*，目的是在服务器程序重新启动时，
         避免等待此前TIME_WAIT状态的结束，以立即复用众所周知的端口*/
-    if(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (const void*)&optval, sizeof(int)) == -1){
+    if(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (const void*)&optval, sizeof(int)) == -1){  //#include <sys/socket.h>
         return -1;
     }
 
     // 设置服务器IP和Port，和监听描述符绑定
+    /*IPv4 套接字地址结构*/
     struct sockaddr_in server_addr;
-    bzero((char*)&server_addr, sizeof(server_addr));
+    bzero((char*)&server_addr, sizeof(server_addr)); //#include <string.h>
     server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    /*int：-2147483648~2147483647 转换为 unsigned short：0-65535*/
-    server_addr.sin_port = htons((unsigned short)port); 
-    if(bind(listen_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY); //#include <netinet/in.h>
+    /*int：-2147483648~2147483647 转换为 unsigned short：0-65535*/ 
+    server_addr.sin_port = htons((unsigned short)port);  //#include <netinet/in.h>
+    if(bind(listen_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) //#include <sys/socket.h>
         return -1;
 
     // 开始监听，最大等待队列长为LISTENQ
-    if(listen(listen_fd, LISTENQ) == -1)
+    if(listen(listen_fd, LISTENQ) == -1)  //#include <sys/socket.h>
         return -1;
 
     // 无效监听描述符
+    /*前面不是已经避免了listen_fd值为-1的可能吗？此处的判断觉得有些多余，02？？？*/
     if(listen_fd == -1){
-        close(listen_fd);
+        /*close函数的作用见UNPv1第36面*/
+        close(listen_fd);  //#include <unistd.h>
         return -1;
     }
 
     return listen_fd;
 }
 
+/*该函数将套接字设置为非阻塞式I/O型，UNPv1第183面有详细解释*/
 int make_socket_non_blocking(int fd){
-    int flag = fcntl(fd, F_GETFL, 0);
+    int flag = fcntl(fd, F_GETFL, 0); //#include <fcntl.h>
     if(flag == -1)
         return -1;
 
     flag |= O_NONBLOCK;
     if(fcntl(fd, F_SETFL, flag) == -1)
         return -1;
+    /*没有说设置成功时该返回的数值，01？？？*/
 }
 
 void accept_connection(int listen_fd, int epoll_fd, char* path){
     struct sockaddr_in client_addr;
-    memset(&client_addr, 0, sizeof(struct sockaddr_in));
+    memset(&client_addr, 0, sizeof(struct sockaddr_in));  //#include <string.h>，sizeof()是编译时运算符
     socklen_t client_addr_len = 0;
-    int accept_fd = accept(listen_fd, (struct sockaddr*)&client_addr, &client_addr_len);
+    int accept_fd = accept(listen_fd, (struct sockaddr*)&client_addr, &client_addr_len); //#include <sys/socket.h>
     if(accept_fd == -1)
-        perror("accept");
+        perror("accept"); //#include <stdio.h>
 
     // 设为非阻塞模式
+    /*accept 的时候，套接字为阻塞模式*/
     int rc = make_socket_non_blocking(accept_fd);
 
     // 申请tk_http_request_t类型节点并初始化
-    tk_http_request_t* request = (tk_http_request_t*)malloc(sizeof(tk_http_request_t));
+    tk_http_request_t* request = (tk_http_request_t*)malloc(sizeof(tk_http_request_t));  //#include <stdlib.h>
     tk_init_request_t(request, accept_fd, epoll_fd, path);
 
     // 文件描述符可以读，边缘触发(Edge Triggered)模式，保证一个socket连接在任一时刻只被一个线程处理
