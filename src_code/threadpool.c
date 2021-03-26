@@ -5,8 +5,9 @@
 
 #include "threadpool.h"
 
-static int threadpool_free(tk_threadpool_t *pool); // 释放线程池
-static void* threadpool_worker(void *arg); //线程处理函数
+/*释放线程池中的线程数组和 task 链表*/
+static int threadpool_free(tk_threadpool_t *pool); 
+static void* threadpool_worker(void *arg); 
 
 // 释放线程池
 /*释放线程池中的线程数组和 task 链表*/
@@ -21,7 +22,6 @@ int threadpool_free(tk_threadpool_t *pool){
     /*线程池pool是由malloc分配的，因此里面的指针成员指向的内存是由free()函数释放*/
     if(pool->threads)
         free(pool->threads); // #include <stdlib.h>
-    
 
     // 逐节点销毁task链表
     /*从首节点一直free到尾节点*/
@@ -39,7 +39,7 @@ void *threadpool_worker(void *arg){
     if(arg == NULL)
         return NULL;
     
-
+    /*将 void * 转换为 tk_threadpool_t * */
     tk_threadpool_t *pool = (tk_threadpool_t *)arg;
     tk_task_t *task;
     while(1){
@@ -47,12 +47,15 @@ void *threadpool_worker(void *arg){
         pthread_mutex_lock(&(pool->lock));
 
         // 没有task且未停机则阻塞
+        /* shutdown：0-未停机模式，1-立即停机模式，2-平滑停机模式 */
         while((pool->queue_size == 0) && !(pool->shutdown))
             pthread_cond_wait(&(pool->cond), &(pool->lock));
         
         // 立即停机模式、平滑停机且没有未完成任务则退出
+        /* 工作线程立即停机退出 */
         if(pool->shutdown == immediate_shutdown)
             break;
+        /* 平滑停机且没有未完成任务时退出 */
         else if((pool->shutdown == graceful_shutdown) && (pool->queue_size == 0))
             break;
 
@@ -73,9 +76,13 @@ void *threadpool_worker(void *arg){
         (*(task->func))(task->arg);
         free(task);
     }
+    
+    /* 工作线程的个数减 1 */
     pool->started--;
     pthread_mutex_unlock(&(pool->lock));
+    /* #define NULL ((void *)0)，线程的退出码为0 */
     pthread_exit(NULL);
+    /* pthread_exit() 函数已经可以让线程退出，return 有些多余 */
     return NULL;
 }
 
@@ -165,7 +172,7 @@ tk_threadpool_t *threadpool_init(int thread_num){
 
     // 创建线程
     for(int i = 0; i < thread_num; ++i){
-        /*经创建线程的属性置为 pool 是有问题的吧，02？？？？*/
+        /* pool 是传给线程处理函数的参数 */
         if(pthread_create(&(pool->threads[i]), NULL, threadpool_worker, (void*)pool) != 0){ // #include <pthread.h>
             threadpool_destory(pool, 0);
             return NULL;

@@ -25,8 +25,8 @@ typedef struct threadpool{
     tk_task_t *head;    // 任务链表（链表中的头节点）
     int thread_count;    // 线程数 
     int queue_size;    // 任务链表长
-    int shutdown;     // 关机模式
-    int started;
+    int shutdown;     // 停机模式，0-未停机模式，1-立即停机模式，2-平滑停机模式
+    int started; //工作线程的个数
 }tk_threadpool_t;
 
 
@@ -41,7 +41,9 @@ typedef enum{
 
 /*threadpool_sd 枚举类型别名*/
 typedef enum{
+    /* 立即停机模式，即使有 task 也退出 */
     immediate_shutdown = 1,
+    /* 平滑停机模式，等待所有 task 完成后退出 */
     graceful_shutdown = 2
 }tk_threadpool_sd_t;
 
