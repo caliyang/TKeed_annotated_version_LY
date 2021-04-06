@@ -40,13 +40,16 @@ int tk_pq_sink(tk_pq_t *tk_pq, size_t i){
     return sink(tk_pq, i);
 }
 
+/* 初始化优先级队列头节点/哨兵节点 */
 int tk_pq_init(tk_pq_t *tk_pq, tk_pq_comparator_pt comp, size_t size){
     // 为tk_pq_t节点的pq分配(void *)指针
+    /* 为什么是(size + 1)，02？？？ */
     tk_pq->pq = (void **)malloc(sizeof(void *) * (size + 1));
     if (!tk_pq->pq)
         return -1;
 
     tk_pq->nalloc = 0;
+   /* 为什么是(size + 1)，02？？？ */
     tk_pq->size = size + 1;
     tk_pq->comp = comp;
     return 0;
@@ -66,7 +69,7 @@ void *tk_pq_min(tk_pq_t *tk_pq){
     // 优先队列最小值直接返回第一个元素（指针）
     if (tk_pq_is_empty(tk_pq))
         return (void *)(-1);
-
+    /* 第一个元素不是0吗，02？？？ */
     return tk_pq->pq[1];
 }
 
@@ -88,6 +91,7 @@ int resize(tk_pq_t *tk_pq, size_t new_size){
     return 0;
 }
 
+/* 删除优先级队列节点 */
 int tk_pq_delmin(tk_pq_t *tk_pq){
     if(tk_pq_is_empty(tk_pq))
         return 0;

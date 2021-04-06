@@ -60,6 +60,7 @@ typedef struct tk_http_request{
     void* cur_header_key_end;
     void* cur_header_value_start;
     void* cur_header_value_end;
+    /* 设置http_request 结构体的 timer 成员，该成员是 timer 优先级队列中的节点  */
     void* timer; // 指向时间戳结构
 }tk_http_request_t;
 

@@ -11,6 +11,7 @@
 
 typedef int (*tk_pq_comparator_pt)(void *pi, void *pj);
 
+/* 优先级队列节点 */
 typedef struct priority_queue{
     void **pq;
     size_t nalloc;
@@ -18,7 +19,8 @@ typedef struct priority_queue{
     tk_pq_comparator_pt comp;
 }tk_pq_t;
 
-int tk_pq_init(tk_pq_t *tk_pq, tk_pq_comparator_pt comp, size_t size);
+/* 初始化优先级队列头节点/哨兵节点 */
+int tk_pq_init(tk_pq_t *tk_pq, tk_pq_comparator_pt comp, size_t size); 
 int tk_pq_is_empty(tk_pq_t *tk_pq);
 size_t tk_pq_size(tk_pq_t *tk_pq);
 void *tk_pq_min(tk_pq_t *tk_pq);
