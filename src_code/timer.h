@@ -22,6 +22,7 @@ typedef struct tk_timer{
 
 // tk_pq_t定义在"priority_queue.h"中，优先队列中节点
 extern tk_pq_t tk_timer;
+/* size_t 为什么要用 extern */
 extern size_t tk_current_msec;
 
 int tk_timer_init();

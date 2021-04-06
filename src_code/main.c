@@ -38,9 +38,9 @@ int main(int argc, char *argv[]){
     int epoll_fd = tk_epoll_create(0);
     /*为tk_http_request_t结构体分配内存*/
     tk_http_request_t* request = (tk_http_request_t*)malloc(sizeof(tk_http_request_t));
-     /*初始化请求数据结构*/
+    /*初始化请求数据结构*/
     tk_init_request_t(request, listen_fd, epoll_fd, conf.root);
-     /*向epoll句柄添加监听套接字，epoll_event 结构体中的 events 是 EPOLLIN | EPOLLET，data 是 request指针 */
+    /*向epoll句柄添加监听套接字，epoll_event 结构体中的 events 是 EPOLLIN | EPOLLET，data 是 request指针 */
     tk_epoll_add(epoll_fd, listen_fd, request, (EPOLLIN | EPOLLET));
 
     // 初始化线程池
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]){
 
     // 初始化计时器
     tk_timer_init();
-
+    
     while(1){
         // 得到最近且未删除时间和当前时间差值（等待时间）
         int time = tk_find_timer();

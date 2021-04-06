@@ -17,7 +17,7 @@ int timer_comp(void* ti, void* tj){
 }
 
 // 获取当前时间
-/* 将当前时间用微秒表示 */
+/* 将当前时间用微秒表示，并存储在 tk_current_msec 中 */
 void tk_time_update(){
     /* 通过 gettimeofday 函数将当前时间表示为秒和微秒存储在 timeval 结构中 */
     struct timeval tv;
