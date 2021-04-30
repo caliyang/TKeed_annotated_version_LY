@@ -21,6 +21,7 @@ void test()
 
     return;
 }
+
 int main()
 {
     test();
