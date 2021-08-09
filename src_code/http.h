@@ -32,6 +32,8 @@
     *(uint32_t *) m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0)
 
 // 用key-value表示mime_type_t
+/* MIME 是描述文件媒体类型的互联网标准，
+   媒体类型是由 Web 服务器通过 HTTP 协议的 Content-Type 申请头来告知浏览器的*/
 typedef struct mime_type{
     const char *type;
     const char *value;

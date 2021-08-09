@@ -73,7 +73,6 @@ typedef struct tk_http_out{
     int status;
 }tk_http_out_t;
 
-/**/
 typedef struct tk_http_header{
     void* key_start;
     void* key_end;
