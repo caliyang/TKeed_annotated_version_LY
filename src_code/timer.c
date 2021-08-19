@@ -6,12 +6,12 @@
 #include <sys/time.h>
 #include "timer.h"
 
-/* timer 优先级队列 */
+/* timer为优先级队列结构体 */
 tk_pq_t tk_timer;
-/* current_msec 当前时间，单位为 ms  */
+/* current_msec为当前时间，单位为ms */
 size_t tk_current_msec;
 
-/* 比较两个计时器的超时时间 */
+/* 比较两个计时器的超时时间，左边小于右边则返回1，否则返回0 */
 int timer_comp(void* ti, void* tj){
     tk_timer_t* timeri = (tk_timer_t*)ti;
     tk_timer_t* timerj = (tk_timer_t*)tj;
@@ -19,20 +19,20 @@ int timer_comp(void* ti, void* tj){
 }
 
 // 获取当前时间
-/* 更新并记录当前时间 */
-/* 将当前时间用微秒表示，并存储在 tk_current_msec 中 */
+/* 更新并记录当前时间，将当前时间用微秒表示，并存储在tk_current_msec中 */
 void tk_time_update(){
-    /* 通过 gettimeofday 函数将当前时间表示为秒和微秒存储在 timeval 结构中 */
+    /* 通过gettimeofday函数将当前时间表示为秒和微秒并存储在timeval结构中 */
     struct timeval tv;
     int rc = gettimeofday(&tv, NULL); // #include <sys/time.h>
     tk_current_msec = ((tv.tv_sec * 1000) + (tv.tv_usec / 1000)); 
 }
 
-/* 初始化 timer 优先级队列，比较函数设置为 timer_comp，队列大小为 500？501？，02？？？
+/* 初始化timer优先级队列，比较函数置为timer_comp，队列大小为500？501？，02？？？
     优先级队列里面的成员为 time_t 结构体 */
 int tk_timer_init(){
     // 建立连接后立即初始化
     // 初始优先队列大小TK_PQ_DEFAULT_SIZE = 10
+    /* tk_pq_init()函数的最后一个参数的实际含义为节点的最大编号 */
     int rc = tk_pq_init(&tk_timer, timer_comp, TK_PQ_DEFAULT_SIZE);
 
     // 更新当前时间
@@ -40,7 +40,7 @@ int tk_timer_init(){
     return 0;
 }
 
-/* 该函数返回队列中最早时间和当前时间之差 */
+/* 该函数返回优先级队列中最早时间和当前时间之差 */
 int tk_find_timer(){
     int time;
     // 返回队列中最早时间和当前时间之差
