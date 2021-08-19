@@ -14,7 +14,7 @@ typedef int (*tk_pq_comparator_pt)(void *pi, void *pj);
 
 /* 优先队列结构体 */
 typedef struct priority_queue{
-    /* 优先队列指针 */
+    /* 优先队列节点（数组）指针 */
     void **pq;
     /* 优先队列实际元素个数 */
     size_t nalloc;
