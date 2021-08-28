@@ -24,6 +24,9 @@
 #define MAXLINE 8192
 #define SHORTLINE 512
 
+/* 宏定义理解：比较两侧的字节排列；
+   对于左边，将m由u_char *转换为u_int32_t *，可以实现从地址起始处读1个字节到4个字节的扩展；
+   对于右边，因为数组中的元素是从低地址到高地址排列的，所以相应位置的字节需要左移一定的位数； */
 #define tk_str3_cmp(m, c0, c1, c2, c3)                                       \
     *(uint32_t *) m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0)
 #define tk_str3Ocmp(m, c0, c1, c2, c3)                                       \
@@ -32,8 +35,7 @@
     *(uint32_t *) m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0)
 
 // 用key-value表示mime_type_t
-/* MIME 是描述文件媒体类型的互联网标准，
-   媒体类型是由 Web 服务器通过 HTTP 协议的 Content-Type 申请头来告知浏览器的*/
+/* MIME是描述文件媒体类型的互联网标准，媒体类型是由Web服务器通过HTTP协议的Content-Type申请头来告知浏览器的 */
 typedef struct mime_type{
     const char *type;
     const char *value;

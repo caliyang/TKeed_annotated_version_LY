@@ -176,13 +176,16 @@ void do_request(void* ptr){
     char* plast = NULL;
     size_t remain_size;
 
+    /* 与定时器的关联有待进一步挖掘，03？？？ */
     tk_del_timer(request);
 
     while(1){
         // plast指向缓冲区buf当前可写入的第一个字节位置，这里取余是为了实现循环缓冲
+        /* request->last为累计已经写入缓冲区的字节数 */
         plast = &request->buff[request->last % MAX_BUF];
 
         // remain_size表示缓冲区当前剩余可写入字节数
+        /* MAX_BUF - (request->last - request->pos) - 1，02？？？ */
         remain_size = MIN(MAX_BUF - (request->last - request->pos) - 1, MAX_BUF - request->last % MAX_BUF);
 
         // 从连接描述符fd读取数据并复制到用户缓冲区plast指向的开始位置

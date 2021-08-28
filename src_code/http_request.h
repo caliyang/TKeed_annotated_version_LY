@@ -17,10 +17,12 @@
 
 #define TK_AGAIN EAGAIN
 
-#define TK_HTTP_PARSE_INVALID_METHOD        10
+/* 请求方法中的字符ch满足条件：(ch < 'A' || ch > 'Z') && ch != '_' */
+#define TK_HTTP_PARSE_INVALID_METHOD        10 
 #define TK_HTTP_PARSE_INVALID_REQUEST       11
 #define TK_HTTP_PARSE_INVALID_HEADER        12
 
+/* 请求方法中的字符ch满足条件：'A' <= ch <= 'Z' || ch == '_' */
 #define TK_HTTP_UNKNOWN                     0x0001
 #define TK_HTTP_GET                         0x0002
 #define TK_HTTP_HEAD                        0x0004
@@ -38,12 +40,17 @@ typedef struct tk_http_request{
     int epoll_fd; // epoll描述符
     char buff[MAX_BUF]; // 用户缓冲
     size_t pos;
-    size_t last;
+    /* 累计已经写入缓冲区的字节数 */
+    size_t last; 
     int state; // 请求头解析状态
+    /* 在初始化函数tk_init_request_t中，除了buff数组，以上变量都已初始化 */
 
+    /* 指向请求方法中的首个字符，比如GET中的'G' */
     void* request_start;
+    /* 指向请求方法后的空格字符 */
     void* method_end;
     int method; // 请求方法
+    /* 指向URL地址的首字符，即'/' */
     void* uri_start;
     void* uri_end;
     void* path_start;

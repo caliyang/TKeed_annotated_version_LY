@@ -5,10 +5,20 @@
 #include "http.h"
 
 int tk_http_parse_request_line(tk_http_request_t *request){
+    /* 有限状态机：由于http的报文是文本形式，无法按照字节的形式提取报文中的字段，因此采用有限状态机的方式来完成。
+                 http报文中的字段有限，可以将不同字段的识别过程设置为不同的状态，每识别到分割字符时，就改变当前的状态。 */
+    /* 枚举常量表用于表示http request的识别状态 */
+    /* sw_表示short word */
     enum{
+        /* 开始解析http request文件 */
         sw_start = 0,
+        /* 开始解析请求方法字段，包括GET、POST和HEAD，本http服务器仅支持HTTP 1.0 */
+        /* 进入时指向请求方法中的第一个字符 */
         sw_method,
+        /* 开始解析URI，进入时指向URL的第一个字符‘/’ */
+        /* 命名中的before可以理解为在pos指向URL前/请求方法后的空格时获得该状态 */
         sw_spaces_before_uri,
+        /*  */
         sw_after_slash_in_uri,
         sw_http,
         sw_http_H,
@@ -33,23 +43,27 @@ int tk_http_parse_request_line(tk_http_request_t *request){
         switch(state){
             case sw_start:
                 request->request_start = p;
+                /* ch == CR || ch == LF，02？？？ */
                 if(ch == CR || ch == LF)
                     break;
+                /* ch != '_'，01？？？http有限状态机解析请求中无此条件 */
                 if((ch < 'A' || ch > 'Z') && ch != '_')
                     return TK_HTTP_PARSE_INVALID_METHOD;
                 state = sw_method;
                 break;
-
+        
             case sw_method:
                 if(ch == ' '){
                     request->method_end = p;
                     m = request->request_start;
                     switch(p - m){
                         case 3:
+                            /* 使用逐字节比较而不是字符串比较的好处在于前者速度更快 */
                             if(tk_str3_cmp(m, 'G', 'E', 'T', ' ')){
                                 request->method = TK_HTTP_GET;
                                 break;
                             }
+                            /* 此处应该报错或者跳到default而不是break，因为此时method未初始化 */
                             break;
                         case 4:
                             if(tk_str3Ocmp(m, 'P', 'O', 'S', 'T')){
@@ -60,15 +74,18 @@ int tk_http_parse_request_line(tk_http_request_t *request){
                                 request->method = TK_HTTP_HEAD;
                                 break;
                             }
+                            /* 此处应该报错或者跳到default而不是break，因为此时method未初始化 */
                             break;
                         default:
                             request->method = TK_HTTP_UNKNOWN;
+                            /* break继续往后解析，但此时的method被初始化为TK_HTTP_UNKNOWN，01？？？？ */
                             break;
                     }
                     state = sw_spaces_before_uri;
                     break;
                 }
 
+                /* ch != '_'，01？？？http有限状态机解析请求中无此条件 */
                 if((ch < 'A' || ch > 'Z') && ch != '_')
                     return TK_HTTP_PARSE_INVALID_METHOD;
                 break;
