@@ -10,6 +10,7 @@ static void parse_uri(char *uri, int length, char *filename, char *query);
 static void do_error(int fd, char *cause, char *err_num, char *short_msg, char *long_msg);
 static void serve_static(int fd, char *filename, size_t filesize, tk_http_out_t *out);
 
+/* ROOT指向地址0 */
 static char *ROOT = NULL;
 
 mime_type_t tkeed_mime[] = 
@@ -35,23 +36,32 @@ mime_type_t tkeed_mime[] =
     {NULL ,"text/plain"}
 };
 
+/* 解析URL地址，获得文件名 */
 static void parse_uri(char *uri_start, int uri_length, char *filename, char *query){
+    /* 这操作牛呀！！！ */
     uri_start[uri_length] = '\0';
     // 找到'?'位置界定非参部分
+    /* delimiter-分隔符 */
     char *delim_pos = strchr(uri_start, '?');
+    /* URL地址中按照有无请求参数计算URL地址长度 */
     int filename_length = (delim_pos != NULL) ? ((int)(delim_pos - uri_start)) : uri_length;
+    /* 把filename初始化为0，也就是指向地址为0的地方 */
     strcpy(filename, ROOT);
     // 将uri中属于'?'之前部分内容追加到filename
     strncat(filename, uri_start, filename_length);
     // 在请求中找到最后一个'/'位置界定文件位置
     char *last_comp = strrchr(filename, '/');
     // 在文件名中找到最后一个'.'界定文件类型
+    /* 具体到了某个文件就很详细了，比如某网页上的一个pdf文件 */
+    /* 如果返回空指针，说明是请求的资源是个网页 */
     char *last_dot = strrchr(last_comp, '.');
     // 请求文件时末尾加'/'
+    /* 如果网页路径的末尾不是以'/'结尾的，则在末尾处添加字符'/' */
     if((last_dot == NULL) && (filename[strlen(filename) - 1] != '/')){
         strcat(filename, "/");
     }
     // 默认请求index.html
+    /* 为网页添加相应的后缀格式 */
     if(filename[strlen(filename) - 1] == '/'){
         strcat(filename, "index.html");
     }
@@ -69,6 +79,7 @@ const char* get_file_type(const char *type){
 }
 
 // 响应错误信息
+/* 项目暂时只考虑了html这一种格式的响应，常见格式见mime_type_t数组tkeed_mime */
 void do_error(int fd, char *cause, char *err_num, char *short_msg, char *long_msg){
     // 响应头缓冲（512字节）和数据缓冲（8192字节）
     char header[MAXLINE];
@@ -82,6 +93,7 @@ void do_error(int fd, char *cause, char *err_num, char *short_msg, char *long_ms
     sprintf(body, "%s<hr><em>TKeed web server</em>\n</body></html>", body);
 
     // 返回错误码，组织错误响应头
+    /* 响应首部，包括状态行和响应头 */
     sprintf(header, "HTTP/1.1 %s %s\r\n", err_num, short_msg);
     sprintf(header, "%sServer: TKeed\r\n", header);
     sprintf(header, "%sContent-type: text/html\r\n", header);
@@ -91,6 +103,7 @@ void do_error(int fd, char *cause, char *err_num, char *short_msg, char *long_ms
     // Add 404 Page
 
     // 发送错误信息
+    /* 如果rio_writen出错的话，该如何显示出来，01？？？  */
     rio_writen(fd, header, strlen(header));
     rio_writen(fd, body, strlen(body));
     return;
@@ -152,12 +165,14 @@ void serve_static(int fd, char *filename, size_t filesize, tk_http_out_t *out){
 
 int error_proess(struct stat* sbufptr, char *filename, int fd){
     // 处理文件找不到错误
+    /* #include <sys/stat.h>，stat()函数，sbuf存储与filename有关的信息结构 */
     if(stat(filename, sbufptr) < 0){
         do_error(fd, filename, "404", "Not Found", "TKeed can't find the file");
         return 1;
     }
 
     // 处理权限错误
+    /* 文件类型是否是普通文件，用户是否可读该文件，有一个不满足就是权限错误 */
     if(!(S_ISREG((*sbufptr).st_mode)) || !(S_IRUSR & (*sbufptr).st_mode)){
         do_error(fd, filename, "403", "Forbidden", "TKeed can't read the file");
         return 1;
@@ -212,6 +227,7 @@ void do_request(void* ptr){
         request->last += n_read;
 
         // 解析请求报文行
+        /* 解析请求行 */
         rc = tk_http_parse_request_line(request);
         if(rc == TK_AGAIN)
             continue;
@@ -219,6 +235,7 @@ void do_request(void* ptr){
             goto err;
 
         // 解析请求报文体
+        /* 应该是解析请求头 */
         rc = tk_http_parse_request_body(request);
         if(rc == TK_AGAIN)
             continue;
@@ -227,9 +244,11 @@ void do_request(void* ptr){
 
         // 分配并初始化返回数据结构
         tk_http_out_t* out = (tk_http_out_t *)malloc(sizeof(tk_http_out_t));
+        /* 猜测是连接描述符，03？？？ */
         tk_init_out_t(out, fd);
 
         // 解析URI，获取文件名
+        /* filename在此函数内初始化 */
         parse_uri(request->uri_start, request->uri_end - request->uri_start, filename, NULL);
 
         // 处理相应错误

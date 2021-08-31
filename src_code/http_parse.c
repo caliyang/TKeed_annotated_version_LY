@@ -12,7 +12,7 @@ int tk_http_parse_request_line(tk_http_request_t *request){
     enum{
         /* 下列短词中，没写的指针指向情况一般是报错或跳过 */
 
-        /* （短：通常情况下只进入一次；报错）开始解析http request文件，进入时指向请求方法中的第一个字符，也有可能是空行（换行标志，会跳过） */
+        /* （短：通常情况下只进入一次；报错）开始解析http的请求行，进入时指向请求方法中的第一个字符，也有可能是空行（换行标志，会跳过） */
         sw_start = 0,
         /* （长：通常情况下会进入多次；报错或跳过）开始解析请求方法字段，直到指向请求方法后面的空格 */
         /* 进入时指向请求方法中的第二个字符 */
@@ -285,16 +285,26 @@ int tk_http_parse_request_line(tk_http_request_t *request){
 
 int tk_http_parse_request_body(tk_http_request_t *request){
     // 状态列表
-    enum{
+    enum
+    {
+        /* （短）开始解析http的申请头，进入时指向第一个key的第一个字符，也有可能是空行（换行标志，会跳过） */
         sw_start = 0,
+        /* （长；跳过）开始解析http请求头的key，进入时指向key的第二个字符，也有可能是key后面的冒号或空格 */
         sw_key,
+        /* （短；报错）开始解析冒号前可能存在的空格，进入时指向冒号或多余空格（空格会跳过） */
+        /* 冒号前无空格时，无此状态 */
         sw_spaces_before_colon,
+        /* （短）开始解析冒号后可能存在的空格，进入时指向value的第一个字符或多余空格（空格会跳过） */
         sw_spaces_after_colon,
+        /* （长，跳过）开始解析http请求头的value，进入时指向value的第二个字符，也有可能是换行标志 */
         sw_value,
+        /* （短；报错）开始解析换行标志的第二个字符，指向换行标志的第二个字符 */
         sw_cr,
+        /* （短）开始解析下一行的第一个字符，进入时指向下一行的第一个字符 */
         sw_crlf,
+        /* （短；报错）开始解析表示首部结束的空行的第二个字符，进入时指向空行的第二个字符 */
         sw_crlfcr
-    }state;
+    } state;
     state = request->state;
 
     size_t pi;
@@ -306,19 +316,24 @@ int tk_http_parse_request_body(tk_http_request_t *request){
 
         switch(state){
             case sw_start:
+                /* 跳过空行 */
+                /* 只有第一个key:value前允可以出现空行，否则就是意味着首部结束 */
                 if(ch == CR || ch == LF)
                     break;
+                /* request->cur_header_key_start指向key的第一个字符 */
                 request->cur_header_key_start = p;
                 state = sw_key;
                 break;
 
             case sw_key:
                 if(ch == ' '){
+                    /* request->cur_header_key_end指向key后的空格 */
                     request->cur_header_key_end = p;
                     state = sw_spaces_before_colon;
                     break;
                 }
                 if(ch == ':'){
+                    /* request->cur_header_key_end指向key后的冒号 */
                     request->cur_header_key_end = p;
                     state = sw_spaces_after_colon;
                     break;
@@ -326,6 +341,7 @@ int tk_http_parse_request_body(tk_http_request_t *request){
                 break;
 
             case sw_spaces_before_colon:
+                /* 跳过冒号前的多余空格 */
                 if(ch == ' ')
                     break;
                 else if(ch == ':'){
@@ -336,6 +352,7 @@ int tk_http_parse_request_body(tk_http_request_t *request){
                     return TK_HTTP_PARSE_INVALID_HEADER;
 
             case sw_spaces_after_colon:
+                /* 跳过value前的多余空格 */
                 if (ch == ' ')
                     break;
                 state = sw_value;
@@ -343,6 +360,8 @@ int tk_http_parse_request_body(tk_http_request_t *request){
                 break;
 
             case sw_value:
+                /* 没考虑换行标志前的空格，将其算入value的一部分 */
+                /* request->cur_header_value_end指向换行标志的第一个字符 */
                 if(ch == CR){
                     request->cur_header_value_end = p;
                     state = sw_cr;
@@ -356,6 +375,7 @@ int tk_http_parse_request_body(tk_http_request_t *request){
             case sw_cr:
                 if(ch == LF){
                     state = sw_crlf;
+                    /* 为什么只在Windows系统中定义http请求头结构，02？？？ */
                     hd = (tk_http_header_t *) malloc(sizeof(tk_http_header_t));
                     hd->key_start = request->cur_header_key_start;
                     hd->key_end = request->cur_header_key_end;
@@ -368,8 +388,10 @@ int tk_http_parse_request_body(tk_http_request_t *request){
                     return TK_HTTP_PARSE_INVALID_HEADER;
 
             case sw_crlf:
+                /* 说明下一行是空行，意味着请求头的结束 */
                 if(ch == CR)
                     state = sw_crlfcr;
+                /* 开始解析下一条key:value */
                 else{
                     request->cur_header_key_start = p;
                     state = sw_key;
@@ -378,6 +400,7 @@ int tk_http_parse_request_body(tk_http_request_t *request){
 
             case sw_crlfcr:
                 switch(ch){
+                    /* 表示首部结束的空行的第二个字符 */
                     case LF:
                         goto done;
                     default:
@@ -390,7 +413,16 @@ int tk_http_parse_request_body(tk_http_request_t *request){
     return TK_AGAIN;
 
     done:
+    /* 此时request->pos指向请求内容的第一个字符 */
     request->pos = pi + 1;
     request->state = sw_start;
     return 0;
 }
+
+/* 蛮重要一部分：
+hd = (tk_http_header_t *)malloc(sizeof(tk_http_header_t));
+hd->key_start = request->cur_header_key_start;
+hd->key_end = request->cur_header_key_end;
+hd->value_start = request->cur_header_value_start;
+hd->value_end = request->cur_header_value_end;
+list_add(&(hd->list), &(request->list));  */
