@@ -12,6 +12,7 @@ static int tk_http_process_ignore(tk_http_request_t* request, tk_http_out_t* out
 static int tk_http_process_connection(tk_http_request_t* request, tk_http_out_t* out, char* data, int len);
 static int tk_http_process_if_modified_since(tk_http_request_t* request, tk_http_out_t* out, char* data, int len);
 
+/* 全局tk_http_header_handle_t数组 */
 tk_http_header_handle_t tk_http_headers_in[] = {
     {"Host", tk_http_process_ignore},
     {"Connection", tk_http_process_connection},
@@ -19,7 +20,10 @@ tk_http_header_handle_t tk_http_headers_in[] = {
     {"", tk_http_process_ignore}
 };
 
+/* 处理该忽视的key */
+/* 忽视key为Host的处理 */
 static int tk_http_process_ignore(tk_http_request_t* request, tk_http_out_t* out, char* data, int len){
+    /* 按照void来解析request、out、data和len，即都为“空” */
     (void) request;
     (void) out;
     (void) data;
@@ -27,8 +31,8 @@ static int tk_http_process_ignore(tk_http_request_t* request, tk_http_out_t* out
     return 0;
 }
 
-
 // 处理连接方式
+/* 判断connect是否设置为keep_alive，是的话将响应头的keep_alive成员置为1 */
 static int tk_http_process_connection(tk_http_request_t* request, tk_http_out_t* out, char* data, int len){
     (void) request;
     // 记录请求是否为keep-alive
@@ -39,17 +43,20 @@ static int tk_http_process_connection(tk_http_request_t* request, tk_http_out_t*
 }
 
 // 判断文件是否修改
+/* 默认是修改的，如果未修改，则将modified置为0，status置为TK_HTTP_NOT_MODIFIED */
 static int tk_http_process_if_modified_since(tk_http_request_t* request, tk_http_out_t* out, char *data, int len){
     (void) request;
     (void) len;
     struct tm tm;
     // 转换data格式为GMT格式
     if(strptime(data, "%a, %d %b %Y %H:%M:%S GMT", &tm) == (char*)NULL){
+        /* 转换出错也返回0，即认为文件是修改了的 */
         return 0;
     }
     // 将时间转换为自1970年1月1日以来持续时间的秒数
     time_t client_time = mktime(&tm);
     // 计算两个时刻之间的时间差
+    /* out->mtime的初始化，03？？？ */
     double time_diff = difftime(out->mtime, client_time);
     // 微秒时间内未修改status显示未修改，modify字段置为1
     if(fabs(time_diff) < 1e-6){
@@ -60,7 +67,7 @@ static int tk_http_process_if_modified_since(tk_http_request_t* request, tk_http
 }
 
 // 初始化请求数据结构
-/* 未初始化的tk_http_request_t结构体内部成员的初值是什么，02？？？ */
+/* 未初始化的tk_http_request_t结构体内部成员的初值是什么，02？？？空指针或0 */
 int tk_init_request_t(tk_http_request_t* request, int fd, int epoll_fd, char* path){
     // 初始化tk_http_request_t结构
     /* 描述符（监听或连接）*/
@@ -89,21 +96,29 @@ int tk_init_out_t(tk_http_out_t* out, int fd){
     return 0;
 }
 
+/* 请求头处理函数 */
 void tk_http_handle_header(tk_http_request_t* request, tk_http_out_t* out){
     list_head* pos;
     tk_http_header_t* hd;
     tk_http_header_handle_t* header_in;
     int len;
+    /* 循环的是各请求头 */
     list_for_each(pos, &(request->list)){
         hd = list_entry(pos, tk_http_header_t, list);
+        /* 对于for循环的几个说明：1.不需强制类型转换；2.数组中最后一个成员的name为空 */
+        /* 循环的是请求头的处理函数 */
         for(header_in = tk_http_headers_in; strlen(header_in->name) > 0; header_in++){
+            /* 比较的长度是key的长度 */
             if(strncmp(hd->key_start, header_in->name, hd->key_end - hd->key_start) == 0){
+                /* value的长度 */
                 len = hd->value_end - hd->value_start;
                 (*(header_in->handler))(request, out, hd->value_start, len);
                 break;
             }    
         }
+        /* 从链表上删除该节点 */
         list_del(pos);
+        /* 释放节点的内存 */
         free(hd);
     }
 }
@@ -111,14 +126,18 @@ void tk_http_handle_header(tk_http_request_t* request, tk_http_out_t* out){
 // 根据状态码返回shortmsg
 const char* get_shortmsg_from_status_code(int status_code){
     if(status_code == TK_HTTP_OK){
+        /* 200 */
         return "OK";
     }
     if(status_code == TK_HTTP_NOT_MODIFIED){
+        /* 304 */
         return "Not Modified";
     }
     if(status_code == TK_HTTP_NOT_FOUND){
+        /* 404，有些多余，因为文件找不到的问题已经在函数error_process()中解决了 */
         return "Not Found";
     }
+    /* 未知状态码 */
     return "Unknown";
 }
 

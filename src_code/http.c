@@ -68,6 +68,7 @@ static void parse_uri(char *uri_start, int uri_length, char *filename, char *que
     return; 
 }
 
+/* 获得Content-Type字段的值 */
 const char* get_file_type(const char *type){
     // 将type和索引表中后缀比较，返回类型用于填充Content-Type字段
     for(int i = 0; tkeed_mime[i].type != NULL; ++i){
@@ -75,11 +76,11 @@ const char* get_file_type(const char *type){
             return tkeed_mime[i].value;
     }
     // 未识别返回"text/plain"
-    return "text/plain";
 }
 
 // 响应错误信息
 /* 项目暂时只考虑了html这一种格式的响应，常见格式见mime_type_t数组tkeed_mime */
+/* 发送错误信息到管道 */
 void do_error(int fd, char *cause, char *err_num, char *short_msg, char *long_msg){
     // 响应头缓冲（512字节）和数据缓冲（8192字节）
     char header[MAXLINE];
@@ -110,13 +111,17 @@ void do_error(int fd, char *cause, char *err_num, char *short_msg, char *long_ms
 }
 
 // 处理静态文件请求
+/* 发送http response到管道 */
 void serve_static(int fd, char *filename, size_t filesize, tk_http_out_t *out){
     // 响应头缓冲（512字节）和数据缓冲（8192字节）
+    /* 存储http response的首部 */
     char header[MAXLINE];
+    /* 存储Last-Modified字段的值 */
     char buff[SHORTLINE];
     struct tm tm;
     
     // 返回响应报文头，包含HTTP版本号状态码及状态码对应的短描述
+    /* 结尾都是\r\n，面向Windows系统响应，02？？？ */
     sprintf(header, "HTTP/1.1 %d %s\r\n", out->status, get_shortmsg_from_status_code(out->status));
     
     // 返回响应头
@@ -143,6 +148,7 @@ void serve_static(int fd, char *filename, size_t filesize, tk_http_out_t *out){
     sprintf(header, "%s\r\n", header);
 
     // 发送报文头部并校验完整性
+    /* status line + response header */
     size_t send_len = (size_t)rio_writen(fd, header, strlen(header));
     if(send_len != strlen(header)){
         perror("Send header failed");
@@ -155,6 +161,7 @@ void serve_static(int fd, char *filename, size_t filesize, tk_http_out_t *out){
     close(src_fd);
 
     // 发送文件并校验完整性
+    /* response body */
     send_len = rio_writen(fd, src_addr, filesize);
     if(send_len != filesize){
         perror("Send file failed");
@@ -253,11 +260,14 @@ void do_request(void* ptr){
 
         // 处理相应错误
         if(error_proess(&sbuf, filename, fd))
+            /* 会从if(n_read == 0) goto err;处退出连接  */
             continue;
 
         tk_http_handle_header(request, out);
 
         // 获取请求文件类型
+        /* 获取请求文件的上次修改时间 */
+        /* 顺序错了吧，应该放在tk_init_out_t(out, fd);后面，03？？？ */
         out->mtime = sbuf.st_mtime;
 
         // 处理静态文件请求

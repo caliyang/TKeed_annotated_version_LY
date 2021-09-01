@@ -30,12 +30,15 @@
 #define TK_HTTP_HEAD                        0x0004
 #define TK_HTTP_POST                        0x0008
 
+/* 找到了该资源，并且一切正常 */
 #define TK_HTTP_OK                          200
+/* 该资源在上次请求之后没有任何修改,通常用于浏览器的缓存机制。 */
 #define TK_HTTP_NOT_MODIFIED                304
+/* 在指定的位置不存在所申请的资源。 */
 #define TK_HTTP_NOT_FOUND                   404
 #define MAX_BUF 8124
 
-/* 请求信息结构 */
+/* 请求结构 */
 typedef struct tk_http_request{
     char* root; // 配置目录
     int fd; // 描述符（监听、连接）
@@ -90,12 +93,17 @@ typedef struct tk_http_request{
     void* timer; // 指向时间戳结构
 }tk_http_request_t;
 
-/* 响应头结构 */
+/* 响应结构 */
 typedef struct tk_http_out{
+    /* 连接描述符 */
     int fd;
+    /* 是否开启长连接 */
     int keep_alive;
+    /* 文件上次修改的时间 */
     time_t mtime;
+    /* 文件是否修改 */
     int modified;
+    /* 返回码 */
     int status;
 }tk_http_out_t;
 
@@ -114,6 +122,7 @@ typedef struct tk_http_header{
 
 typedef int (*tk_http_header_handler_pt)(tk_http_request_t* request, tk_http_out_t* out, char* data, int len);
 
+/* 请求头处理结构体，包含指向key的char指针和请求头处理函数 */
 typedef struct tk_http_header_handle{
     char* name;
     tk_http_header_handler_pt handler;    // 函数指针
@@ -122,10 +131,15 @@ typedef struct tk_http_header_handle{
 /* tk_http_header_handle_t数组的声明，定义可能不在当前文件中，需要在其他文件中找 */
 extern tk_http_header_handle_t tk_http_headers_in[]; 
 
+/* 请求头处理函数 */
 void tk_http_handle_header(tk_http_request_t* request, tk_http_out_t* out);
+/* 关闭描述符，释放请求数据结构 */
 int tk_http_close_conn(tk_http_request_t* request);
+/* 初始化请求数据结构 */
 int tk_init_request_t(tk_http_request_t* request, int fd, int epoll_fd, char* path);
+/* 初始化响应数据结构 */
 int tk_init_out_t(tk_http_out_t* out, int fd);
+/* 根据状态码返回shortmsg */
 const char* get_shortmsg_from_status_code(int status_code);
 
 #endif
