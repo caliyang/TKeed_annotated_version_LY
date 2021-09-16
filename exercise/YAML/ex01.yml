@@ -1,0 +1,30 @@
+# 对比ex03.json
+# 对象名person
+person:
+  # 纯量名（布尔值）boss
+  boss: false
+  # 对象名maps
+  maps:
+    k1: v1
+    k2: 14
+  # 对象列表名lists
+  lists:
+    - name: d1456
+      age: 2
+    - name: d2
+      age: 3
+    - { name: d3, age: 4 }
+  # 纯量名（日期）birth
+  birth: 2017-12-15
+  # 对象名dog
+  dog:
+    name: p_dog
+    age: 15
+  # 纯量名（字符串）age
+  age: 13
+  # 纯量名（字符串）last-name
+  last-name: 张三
+  # 列表名arr
+  arr: [s1, s2, s3]
+# 纯量名（字符串）arrays
+arrays: "a1,a2"

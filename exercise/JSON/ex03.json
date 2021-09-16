@@ -1,0 +1,36 @@
+{
+    "person": {
+        "boss": false,
+        "maps": {
+            "k1": "v1",
+            "k2": 14
+        },
+        "lists": [
+            {
+                "name": "d1",
+                "age": 2
+            },
+            {
+                "name": "d2",
+                "age": 3
+            },
+            {
+                "name": "d3",
+                "age": 4
+            }
+        ],
+        "birth": "2017-12-15T00:00:00.000Z",
+        "dog": {
+            "name": "p_dog",
+            "age": 15
+        },
+        "age": 13,
+        "last-name": "张三",
+        "arr": [
+            "s1",
+            "s2",
+            "s3"
+        ]
+    },
+    "arrays": "a1,a2"
+}

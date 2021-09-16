@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<students>
+    <student>
+        <name>xiaoming</name>
+        <age>17</age>
+        <class>三年一班</class>
+        <read>基督山伯爵</read>
+    </student>
+    <student>
+        <name>xiaohong</name>
+        <age>18</age>
+        <ciass>四年一班</class>
+        <read>三个火枪手</read>
+    </student>
+</students>

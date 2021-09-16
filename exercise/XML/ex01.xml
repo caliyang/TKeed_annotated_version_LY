@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 注释 -->
+<students>
+    <student>
+        <name>xiaoming</name>
+        <read>&lt;三个火枪手&gt;</read>
+    </student>
+    <student>
+        <name>xiaohong</name>
+        <read>&quot;基督山伯爵&quot;</read>
+    </student>
+    <student name="xiaowang" read="大卫卡波菲尔">
+    </student>
+    <![CDATA[
+    <student>
+        <name>xiaoqing</name>
+        <read>’巴黎圣母院’</read>
+    </student>
+    ]]>
+</students>

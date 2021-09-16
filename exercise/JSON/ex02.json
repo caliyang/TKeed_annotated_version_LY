@@ -1,0 +1,13 @@
+{
+    "name": "yang",
+    "age": 24,
+    "book": [
+        "Six",
+        "Five",
+        "Four"
+    ],
+    "pi": 3.141592654,
+    "has_a_pc": true,
+    "has_a_watch": false,
+    "wallet": null
+}
